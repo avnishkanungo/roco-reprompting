@@ -40,15 +40,5 @@ streamed = client.completion_stream(...)
 $ conda activate roco
 (roco) $ python run_dialog.py --task pack -llm gpt-4
 ```
-
-## Cite
-```
-@misc{mandi2023roco,
-      title={RoCo: Dialectic Multi-Robot Collaboration with Large Language Models}, 
-      author={Zhao Mandi and Shreeya Jain and Shuran Song},
-      year={2023},
-      eprint={2307.04738},
-      archivePrefix={arXiv},
-      primaryClass={cs.RO}
-}
-```
+## Current Updates
+Updated OpenAI Library so that we can use the current standard functions for API call used for chat completion. This allows the usage of the Llama 3.1 model finetuned and made available by NVIDIA.
