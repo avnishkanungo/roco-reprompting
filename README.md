@@ -23,15 +23,12 @@ Download the macos-compatible `.dmg` file from [MuJoCo release page](https://git
 pip install -r requirements.txt
 ```
 
-### Acquire OpenAI/Claude API Keys
-This is required for prompting GPTs or Claude LLMs. You don't necessarily need both of them. Put your key string somewhere safely in your local repo, and provide a file path (something like `./roco/openai_key.json`) and load them in the scripts. Example code snippet:
+### Using the required keys(NVIDIA/OpenAI)
+For the same please create a .env file with the required key and load the same to the dialog_prompter.py script for the multi-thread usage using the load_dotenv() function. Please make sure that you have the dotenv library for the same.
 ```
-import openai  
-openai.api_key = YOUR_OPENAI_KEY
-
-import anthropic
-client = anthropic.Client(api_key=YOUR_CLAUDE_KEY)
-streamed = client.completion_stream(...)  
+from dotenv import load_dotenv
+load_dotenv()
+api_key = os.environ.get("NVIDIA_API_KEY") ## or OPENAI_API_KEY 
 ```
 
 ## Usage 
