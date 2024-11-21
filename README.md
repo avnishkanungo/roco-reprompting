@@ -2,6 +2,7 @@
 
 
 Based on the paper: https://arxiv.org/pdf/2307.04738
+Will be looking to implemnt the same by adding a reprompting module in the feedback process that has been implemented in the RoCo paper.
 
 ## Setup
 ### setup conda env and package install
