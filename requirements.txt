@@ -4,7 +4,7 @@ matplotlib==3.5.1
 mujoco==2.3.0
 natsort==8.0.2
 numpy==1.22.0
-openai==0.27.2
+openai==1.5.0
 opencv-python==4.5.5.64
 pyquaternion==0.9.9
 transforms3d==0.4.1
