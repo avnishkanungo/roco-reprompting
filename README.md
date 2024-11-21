@@ -1,13 +1,7 @@
-# RoCo: Dialectic Multi-Robot Collaboration with Large Language Models
-Codebase for paper: RoCo: Dialectic Multi-Robot Collaboration with Large Language Models
+# Implementing RoCo: Dialectic Multi-Robot Collaboration with Large Language Models with reprompting
 
-[Mandi Zhao](https://mandizhao.github.io), [Shreeya Jain](https://www.linkedin.com), [Shuran Song](https://www.cs.columbia.edu/~shurans/) 
 
-[Arxiv](https://arxiv.org/abs/2307.04738) | [Project Website](https://project-roco.github.io) 
-
- 
-<img src="method.jpeg" alt="method" width="800"/>
-
+Based on the paper: https://arxiv.org/pdf/2307.04738
 
 ## Setup
 ### setup conda env and package install
@@ -46,11 +40,6 @@ streamed = client.completion_stream(...)
 $ conda activate roco
 (roco) $ python run_dialog.py --task pack -llm gpt-4
 ```
-
-
-## Contact
-Please direct to [Mandi Zhao](https://mandizhao.github.io). 
-If you are interested in contributing or collaborating, please feel free to reach out! I'm more than happy to chat and brainstorm together. 
 
 ## Cite
 ```
