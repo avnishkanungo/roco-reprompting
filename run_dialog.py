@@ -34,7 +34,7 @@ class LLMRunner:
         self,
         env: MujocoSimEnv,
         robots: Dict[str, SimRobot],
-        max_runner_steps: int = 50,
+        max_runner_steps: int = 15,
         video_format: str = "mp4",
         num_runs: int = 1,
         verbose: bool =False,
@@ -134,7 +134,7 @@ class LLMRunner:
             )
 
         else:
-            self.prompter = DialogPrompter(
+            self.prompter = DialogPrompter(    ## works primarily with "dialog mode"
                 env=self.env,
                 parser=self.parser,
                 feedback_manager=self.feedback_manager,
@@ -183,7 +183,8 @@ class LLMRunner:
         done = False
         reward = 0
         obs = env.get_obs()
-        for step in range(start_step, start_step + self.max_runner_steps):
+        for step in range(start_step, start_step + self.max_runner_steps): 
+            #for each runn there will be 10(tsteps) steps running
 
             step_dir = os.path.join(save_dir, f"step_{step}")
             os.makedirs(step_dir, exist_ok=self.overwrite)
@@ -194,6 +195,7 @@ class LLMRunner:
             data_fname = f"{step_dir}/env_init.pkl"
             with open(data_fname, "wb") as f:
                 pickle.dump(sim_data, f)
+            ### Generates directories to save the prompts and env info for the current step.
 
 
             if step == start_step and len(prev_llm_plans) > 0:
@@ -213,7 +215,7 @@ class LLMRunner:
                     obs,
                     save_path=prompt_path,
                     # prev_response=(prev_response['response'] if step == start_step and prev_response is not None else None)
-                    )
+                    ) ## prompting one round inside each step
                 if not ready_to_execute or current_llm_plan is None:
                     print(f"Run {run_id}: Step {step} failed to get a plan from LLM. Move on to next step.")
                     continue
@@ -295,6 +297,7 @@ class LLMRunner:
                 pickle.dump(sim_data, f)
 
             self.prompter.post_execute_update(
+                ### Potentially where we can think of adding human feedback
                 obs_desp="", # TODO
                 execute_success=(not rewind_env),
                 parsed_plan=current_llm_plan[0].get_action_desp()
@@ -375,7 +378,7 @@ class LLMRunner:
         if args.start_id == -1 and len(existing_runs) > 0:
             existing_run_ids = [int(run.split("_")[-1]) for run in existing_runs]
             start_id = max(existing_run_ids) + 1
-        for run_id in range(start_id, start_id + self.num_runs):
+        for run_id in range(start_id, start_id + self.num_runs):  ### Calling each of the step in a run
             print(f"==== Run {run_id} starts ====")
             self.one_run(run_id)
 
@@ -418,7 +421,7 @@ def main(args):
         randomize_init=True,
         render_point_cloud=0,
         render_cameras=["face_panda","face_ur5e","teaser",],
-        one_obj_each=True,
+        # one_obj_each=True, 
     )
     robots = env.get_sim_robots()
     if args.no_feedback:
@@ -460,7 +463,7 @@ def main(args):
         temperature=args.temperature,
         llm_source=args.llm_source,
     )
-    runner.run(args)
+    runner.run(args)   #### this is where the run start
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -489,6 +492,7 @@ if __name__ == "__main__":
     parser.add_argument("--no_feedback", "-nf", action="store_true")
     parser.add_argument("--llm_source", "-llm", type=str, default="gpt-4")
     logging.basicConfig(level=logging.INFO)
-
+    
     args = parser.parse_args()
+    print(f"{args.comm_mode}")
     main(args)

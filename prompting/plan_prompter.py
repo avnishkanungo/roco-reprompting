@@ -24,8 +24,8 @@ Each <coord> is a tuple (x,y,z) for gripper location, follow these steps to plan
         e.g. given path [(0.1, 0.2, 0.3), (0.2, 0.2. 0.3), (0.3, 0.4. 0.7)], the distance between steps (0.1, 0.2, 0.3)-(0.2, 0.2. 0.3) is too low, and between (0.2, 0.2. 0.3)-(0.3, 0.4. 0.7) is too high. You can change the path to [(0.1, 0.2, 0.3), (0.15, 0.3. 0.5), (0.3, 0.4. 0.7)] 
     If a plan failed to execute, re-plan to choose more feasible steps in each PATH, or choose different actions.
 """
-OPENAI_KEY = str(json.load(open("openai_key.json")))
-openai.api_key = OPENAI_KEY
+OPENAI_KEY = json.load(open("openai_key.json"))
+openai.api_key = str(OPENAI_KEY["OPENAI_KEY"])
 
 
 def get_chat_prompt(env: MujocoSimEnv):

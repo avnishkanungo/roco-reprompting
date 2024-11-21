@@ -43,7 +43,7 @@ At each round, given 'Scene description' and 'Environment feedback', use it to r
 SWEEP_ACTION_SPACE="""
 [Action Options]
 1) MOVE <target>, <target> can only be a cube.
-2) SWEEP <target>, this moves the groom so it pushes the <target> into dustpan, only Bob can SWEEP, Alice must WAIT in front of the same <target> cube when Bob SWEEP.
+2) SWEEP <target>, this moves the broom so it pushes the <target> into dustpan, only Bob can SWEEP, Alice must WAIT in front of the same <target> cube when Bob SWEEP.
 3) WAIT, stays at the current spot.
 4) DUMP, only when there are one or more cubes in the dustpan, Alice can DUMP it into trash_bin.
 Only SWEEP a cube after both robots MOVEed to the cube.
