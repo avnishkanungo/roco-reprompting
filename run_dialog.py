@@ -180,11 +180,17 @@ class LLMRunner:
         save_dir = os.path.join(self.run_dir, f"run_{run_id}")
         os.makedirs(save_dir, exist_ok=self.overwrite)
 
+        
+
         done = False
         reward = 0
         obs = env.get_obs()
         for step in range(start_step, start_step + self.max_runner_steps): 
             #for each runn there will be 10(tsteps) steps running
+
+            ## display current environment visualize_voxel_scene function
+            ## get pre-prompt based on that from the user for extra context
+            
 
             step_dir = os.path.join(save_dir, f"step_{step}")
             os.makedirs(step_dir, exist_ok=self.overwrite)
@@ -214,6 +220,7 @@ class LLMRunner:
                 ready_to_execute, current_llm_plan, response, prompt_breakdown = self.prompter.prompt_one_round(
                     obs,
                     save_path=prompt_path,
+                    step=step
                     # prev_response=(prev_response['response'] if step == start_step and prev_response is not None else None)
                     ) ## prompting one round inside each step
                 if not ready_to_execute or current_llm_plan is None:

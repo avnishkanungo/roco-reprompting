@@ -10,9 +10,10 @@ from typing import List, Tuple, Dict, Union, Optional, Any
 
 from rocobench.subtask_plan import LLMPathPlan
 from rocobench.rrt_multi_arm import MultiArmRRT
-from rocobench.envs import MujocoSimEnv, EnvState 
+from rocobench.envs import MujocoSimEnv, EnvState, visualize_voxel_scene 
 from .feedback import FeedbackManager
 from .parser import LLMResponseParser
+from copy import deepcopy
 
 # assert os.path.exists("openai_key.json"), "Please put your OpenAI API key in a string in robot-collab/openai_key.json"
 load_dotenv()
@@ -67,6 +68,8 @@ class DialogPrompter:
         self.round_history = []
         self.failed_plans = [] 
         self.latest_chat_history = []
+        self.human_feedback = []
+        self.obs_based_human_input = []
         self.max_calls_per_round = max_calls_per_round 
         self.temperature = temperature
         self.llm_source = llm_source
@@ -94,7 +97,7 @@ class DialogPrompter:
 
         chat_history = "[Previous Chat]\n" + "\n".join(chat_history) if len(chat_history) > 0 else ""
             
-        system_prompt = f"{action_desp}\n{round_history}\n{execute_feedback}{agent_prompt}\n{chat_history}\n" 
+        system_prompt = f"{action_desp}\n{round_history}\n{execute_feedback}{agent_prompt}\n{chat_history}\n[Initial Observation Based Human Feedback]\n{self.obs_based_human_input}" 
         
         if self.use_feedback and len(feedback_history) > 0:
             system_prompt += "\n".join(feedback_history)
@@ -114,7 +117,26 @@ class DialogPrompter:
         ret += f"== Current Round ==\n"
         return ret
     
-    def prompt_one_round(self, obs: EnvState, save_path: str = ""): 
+    def prompt_one_round(self, obs: EnvState, save_path: str = "", step: int=0): 
+        env_disp = deepcopy(self.env)
+        env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
+        env_disp.physics.forward()
+        env_disp.render_point_cloud = True
+        obs = env_disp.get_obs()
+        visualize_voxel_scene(
+            obs.scene,
+            save_img=os.path.join(save_path, f"step_{step}_initial_state.jpg")
+            )
+        
+        while True:
+            initial_human_feedback = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
+            if initial_human_feedback == "q":
+                break
+            elif initial_human_feedback:
+                self.obs_based_human_input.append(initial_human_feedback)
+                print("Feedback appended. Exiting.")
+                break  # Exit the loop after successfully receiving feedback
+        
         plan_feedbacks = []
         chat_history = [] 
         for i in range(self.num_replans):
@@ -299,16 +321,26 @@ Your response is:
     def post_execute_update(self, obs_desp: str, execute_success: bool, parsed_plan: str): ## add a human feedback parameter
         ## create a global variable array here which will store in the human feedback, the human feedback post one step
         ## will be passed as a parameter for the post execute update.
+        # while (human_verifier_input := input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (q to continue without comments): ")) != "q":
+        #     self.human_feedback.append(human_verifier_input)
+        while True:
+            human_verifier_input = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
+            if human_verifier_input == "q":
+                break
+            elif human_verifier_input:
+                self.human_feedback.append(human_verifier_input)
+                print("Feedback appended. Exiting.")
+                break  # Exit the loop after successfully receiving feedback
         if execute_success: 
             # clear failed plans, count the previous execute as full past round in history
             self.failed_plans = []
             chats = "\n".join(self.latest_chat_history)
             self.round_history.append(
-                f"[Chat History]\n{chats}\n[Executed Action]\n{parsed_plan}"
+                f"[Chat History]\n{chats}\n[Executed Action]\n{parsed_plan}\n[Verifier Input]\n{self.human_feedback}"
             )
         else:
             self.failed_plans.append(
-                parsed_plan
+                f"[Failed Executed Action]{parsed_plan}\n[Verifier Input]\n{self.human_feedback}"
             )
         return 
 
