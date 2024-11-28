@@ -1,4 +1,4 @@
-# Implementing RoCo: Dialectic Multi-Robot Collaboration with Large Language Models with reprompting
+# Implementing RoCo: Dialectic Multi-Robot Collaboration with Large Language Models with Human In the Loop(HITL)
 
 
 Based on the paper: https://arxiv.org/pdf/2307.04738
