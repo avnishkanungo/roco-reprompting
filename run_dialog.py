@@ -57,6 +57,7 @@ class LLMRunner:
         use_feedback: bool = False,
         temperature: float = 0.0,
         llm_source: str = "gpt4",
+        rough_human_feedback_plan: list = []
         ):
         self.env = env
         self.env.reset()
@@ -81,6 +82,8 @@ class LLMRunner:
 
         self.llm_output_mode = llm_output_mode
         self.debug_mode = debug_mode # useful for debug
+
+        self.rough_human_feedback_plan = rough_human_feedback_plan
 
 
         self.llm_num_replans = llm_num_replans
@@ -185,6 +188,26 @@ class LLMRunner:
         done = False
         reward = 0
         obs = env.get_obs()
+
+        env_disp = deepcopy(self.env)
+        env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
+        env_disp.physics.forward()
+        env_disp.render_point_cloud = True
+        obs = env_disp.get_obs()
+        visualize_voxel_scene(
+            obs.scene,
+            save_img=os.path.join(save_dir, f"initial_state.jpg")
+            )
+        
+        while True:
+            rough_plan = input("Enter rough plan that the human verifier wants to pass to the LLM based on the environment (press Enter to append, or 'q' to quit without comments): ")
+            if rough_plan == "q":
+                break
+            elif rough_plan:
+                self.rough_human_feedback_plan.append(rough_plan) # Look for where to empty this before the next round
+                print("Feedback appended. Exiting.")
+                break  # Exit the loop after successfully receiving feedback
+
         for step in range(start_step, start_step + self.max_runner_steps): 
             #for each runn there will be 10(tsteps) steps running
 
@@ -220,7 +243,8 @@ class LLMRunner:
                 ready_to_execute, current_llm_plan, response, prompt_breakdown = self.prompter.prompt_one_round(
                     obs,
                     save_path=prompt_path,
-                    step=step
+                    step=step,
+                    rough_plan=self.rough_human_feedback_plan
                     # prev_response=(prev_response['response'] if step == start_step and prev_response is not None else None)
                     ) ## prompting one round inside each step
                 if not ready_to_execute or current_llm_plan is None:
