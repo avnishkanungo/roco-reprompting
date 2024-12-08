@@ -501,7 +501,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", "-d", type=str, default="data")
     parser.add_argument("--temperature", "-temp", type=float, default=0)
     parser.add_argument("--start_id", "-sid", type=int, default=-1)
-    parser.add_argument("--num_runs", '-nruns', type=int, default=1)
+    parser.add_argument("--num_runs", '-nruns', type=int, default=10)
     parser.add_argument("--run_name", "-rn", type=str, default="test")
     parser.add_argument("--tsteps", "-t", type=int, default=10)
     parser.add_argument("--task", type=str, default="sort_one")

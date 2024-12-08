@@ -34,8 +34,18 @@ Each <coord> is a tuple (x,y,z) for gripper location, follow these steps to plan
     If a plan failed to execute, re-plan to choose more feasible steps in each PATH, or choose different actions.
 [How to Incoporate [Rough Overarching Plan from Human Verifier] ,[Human Verifier Observations and Feedback] and [Human Input on Failure] to further improve and optimize planning process]
     These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand
-    Take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent need to do.
-    Take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
+    Alice and Bob need to take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent needs to do.
+    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
+    All three inputs are important context and need to be taken into consideration whenever they are non-empty in the prompt.
+    When [Human Verifier Observations and Feedback] mentions that an observation about the curent setup made by any agent is incorrect, the feedback provided by the human verifier takes precedence and the LLM needs to provide a plan based on that.
+    If [Human Verifier Observations and Feedback] contains a command with "EXECUTE", ignore the response and pass last item in the array as the response.
+"""
+
+HUMAN_VERIFIER_INSTRUCTIONS = """
+[How to Incoporate [Rough Overarching Plan from Human Verifier] ,[Human Verifier Observations and Feedback] and [Human Input on Failure] to further improve and optimize planning process]
+    These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand
+    Alice and Bob need to take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent needs to do.
+    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
     All three inputs are important context and need to be taken into consideration whenever they are non-empty in the prompt.
     When [Human Verifier Observations and Feedback] mentions that an observation about the curent setup made by any agent is incorrect, the feedback provided by the human verifier takes precedence and the LLM needs to provide a plan based on that.
     If [Human Verifier Observations and Feedback] contains a command with "EXECUTE", ignore the response and pass last item in the array as the response.
@@ -91,7 +101,7 @@ class DialogPrompter:
         feedback_history: List = [],
         rough_plan: List = []
     ) -> str:
-        action_desp = self.env.get_action_prompt()
+        action_desp = self.env.get_action_prompt() + HUMAN_VERIFIER_INSTRUCTIONS
         if self.use_waypoints:
             action_desp += PATH_PLAN_INSTRUCTION
         agent_prompt = self.env.get_agent_prompt(obs, agent_name)
