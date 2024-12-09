@@ -43,10 +43,12 @@ Each <coord> is a tuple (x,y,z) for gripper location, follow these steps to plan
 
 HUMAN_VERIFIER_INSTRUCTIONS = """
 [How to Incoporate [Rough Overarching Plan from Human Verifier] ,[Human Verifier Observations and Feedback] and [Human Input on Failure] to further improve and optimize planning process]
-    These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand
+    These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand.
+    When there is a conflict or difference between the plans suggested by the two agents for a round, use the round instructions for that round from the [Rough Overarching Plan from Human Verifier] to proceed further.
     Alice and Bob need to take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent needs to do.
-    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
+    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implementing or parsing the plan.
     All three inputs are important context and need to be taken into consideration whenever they are non-empty in the prompt.
+    The latest value in the [Human Verifier Observations and Feedback] is the most relevant to the current round.
     When [Human Verifier Observations and Feedback] mentions that an observation about the curent setup made by any agent is incorrect, the feedback provided by the human verifier takes precedence and the LLM needs to provide a plan based on that.
     If [Human Verifier Observations and Feedback] contains a command with "EXECUTE", ignore the response and pass last item in the array as the response.
 """
@@ -70,6 +72,7 @@ class DialogPrompter:
         use_feedback: bool = True,
         temperature: float = 0,
         llm_source: str = "gpt-4"
+        
     ):
         self.max_tokens = max_tokens
         self.debug_mode = debug_mode
@@ -371,3 +374,4 @@ Your response is:
         self.round_history = []
         self.failed_plans = [] 
         self.latest_chat_history = []
+        self.obs_based_human_input = []
