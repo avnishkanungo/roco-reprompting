@@ -104,7 +104,11 @@ class DialogPrompter:
         feedback_history: List = [],
         rough_plan: List = []
     ) -> str:
-        action_desp = self.env.get_action_prompt() + HUMAN_VERIFIER_INSTRUCTIONS
+        action_desp = self.env.get_action_prompt()
+
+        if len(rough_plan)>0:
+            action_desp += HUMAN_VERIFIER_INSTRUCTIONS
+
         if self.use_waypoints:
             action_desp += PATH_PLAN_INSTRUCTION
         agent_prompt = self.env.get_agent_prompt(obs, agent_name)
@@ -117,8 +121,10 @@ class DialogPrompter:
             execute_feedback += "\n".join(self.failed_plans) + "\n"
 
         chat_history = "[Previous Chat]\n" + "\n".join(chat_history) if len(chat_history) > 0 else ""
-            
-        system_prompt = f"{action_desp}\n{round_history}\n[Rough Overarching Plan from Human Verifier]\n{rough_plan}\n{execute_feedback}\n{agent_prompt}\n{chat_history}\n[Human Verifier Observations and Feedback]\n{self.obs_based_human_input}" 
+        system_prompt = f"{action_desp}\n{round_history}\n{execute_feedback}\n{agent_prompt}\n{chat_history}" 
+        
+        if len(rough_plan)>0:    
+            system_prompt = f"{action_desp}\n{round_history}\n[Rough Overarching Plan from Human Verifier]\n{rough_plan}\n{execute_feedback}\n{agent_prompt}\n{chat_history}\n[Human Verifier Observations and Feedback]\n{self.obs_based_human_input}" 
         
         if self.use_feedback and len(feedback_history) > 0:
             system_prompt += "\n".join(feedback_history)
@@ -140,25 +146,28 @@ class DialogPrompter:
     
     def prompt_one_round(self, obs: EnvState, save_path: str = "", step: int=0, rough_plan:list=[]): 
         
-        if step > 0:
-            env_disp = deepcopy(self.env)
-            env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
-            env_disp.physics.forward()
-            env_disp.render_point_cloud = True
-            obs = env_disp.get_obs()
-            visualize_voxel_scene(
-                obs.scene,
-                save_img=os.path.join(save_path, f"step_{step}_initial_state.jpg")
-                )
-            
-            while True:
-                initial_human_feedback = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
-                if initial_human_feedback == "q":
-                    break
-                elif initial_human_feedback:
-                    self.obs_based_human_input.append(initial_human_feedback)
-                    print("Feedback appended. Exiting.")
-                    break  # Exit the loop after successfully receiving feedback
+        if len(rough_plan)>0:
+            if step > 0:
+                env_disp = deepcopy(self.env)
+                env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
+                env_disp.physics.forward()
+                env_disp.render_point_cloud = True
+                obs = env_disp.get_obs()
+                visualize_voxel_scene(
+                    obs.scene,
+                    save_img=os.path.join(save_path, f"step_{step}_initial_state.jpg")
+                    )
+                
+                while True:
+                    initial_human_feedback = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
+                    if initial_human_feedback == "q":
+                        self.obs_based_human_input.append("Follow next round instruction from overarching plan.")
+                        print("Default Feedback appended. Exiting.")
+                        break
+                    elif initial_human_feedback:
+                        self.obs_based_human_input.append(initial_human_feedback)
+                        print("Human Feedback appended. Exiting.")
+                        break  # Exit the loop after successfully receiving feedback
         
         plan_feedbacks = []
         chat_history = [] 
@@ -356,16 +365,17 @@ Your response is:
                 #f"[Chat History]\n{chats}\n[Executed Action]\n{parsed_plan}\n[Verifier Input]\n{self.human_feedback}"
             )
         else:
-            while True:
-                human_verifier_input = input("Enter any comments that the human verifier wants to pass to the LLM on plan failure (press Enter to append, or 'q' to quit without comments): ")
-                if human_verifier_input == "q":
-                    break
-                elif human_verifier_input:
-                    self.human_feedback.append(human_verifier_input)
-                    print("Feedback appended. Exiting.")
-                    break  # Exit the loop after successfully receiving feedback            
+            # while True:
+            #     human_verifier_input = input("Enter any comments that the human verifier wants to pass to the LLM on plan failure (press Enter to append, or 'q' to quit without comments): ")
+            #     if human_verifier_input == "q":
+            #         break
+            #     elif human_verifier_input:
+            #         self.human_feedback.append(human_verifier_input)
+            #         print("Feedback appended. Exiting.")
+            #         break  # Exit the loop after successfully receiving feedback            
             self.failed_plans.append(
-                f"[Failed Executed Action]{parsed_plan}\n[Human Input on Failure]\n{self.human_feedback}"
+                f"[Failed Executed Action]{parsed_plan}"
+                # f"[Failed Executed Action]{parsed_plan}\n[Human Input on Failure]\n{self.human_feedback}"
             )
         return 
 

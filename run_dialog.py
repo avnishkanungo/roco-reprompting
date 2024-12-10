@@ -47,7 +47,7 @@ class LLMRunner:
         llm_comm_mode="chat",
         llm_num_replans=1,
         give_env_feedback=True,
-        skip_display=False,
+        skip_display=True, # set to False later when needed
         policy_kwargs: Dict[str, Any] = dict(control_freq=50),
         direct_waypoints: int = 0,
         max_failed_waypoints: int = 0,
@@ -189,24 +189,25 @@ class LLMRunner:
         reward = 0
         obs = env.get_obs()
 
-        env_disp = deepcopy(self.env)
-        env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
-        env_disp.physics.forward()
-        env_disp.render_point_cloud = True
-        obs = env_disp.get_obs()
-        visualize_voxel_scene(
-            obs.scene,
-            save_img=os.path.join(save_dir, f"initial_state.jpg")
-            )
-        
-        while True:
-            rough_plan = input("Enter rough plan that the human verifier wants to pass to the LLM based on the environment (press Enter to append, or 'q' to quit without comments): ")
-            if rough_plan == "q":
-                break
-            elif rough_plan:
-                self.rough_human_feedback_plan.append(rough_plan) # Look for where to empty this before the next round
-                print("Feedback appended. Exiting.")
-                break  # Exit the loop after successfully receiving feedback
+        if args.human_feedback:
+            env_disp = deepcopy(self.env)
+            env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
+            env_disp.physics.forward()
+            env_disp.render_point_cloud = True
+            obs = env_disp.get_obs()
+            visualize_voxel_scene(
+                obs.scene,
+                save_img=os.path.join(save_dir, f"initial_state.jpg")
+                )
+            
+            while True:
+                rough_plan = input("Enter rough plan that the human verifier wants to pass to the LLM based on the environment (press Enter to append, or 'q' to quit without comments): ")
+                if rough_plan == "q":
+                    break
+                elif rough_plan:
+                    self.rough_human_feedback_plan.append(rough_plan) # Look for where to empty this before the next round
+                    print("Feedback appended. Exiting.")
+                    break  # Exit the loop after successfully receiving feedback
 
         for step in range(start_step, start_step + self.max_runner_steps): 
             #for each runn there will be 10(tsteps) steps running
@@ -512,6 +513,7 @@ if __name__ == "__main__":
     parser.add_argument("--skip_display", "-sd", action="store_true")
     parser.add_argument("--direct_waypoints", "-dw", type=int, default=5)
     parser.add_argument("--num_replans", "-nr", type=int, default=5)
+    parser.add_argument("--human_feedback", "-hf", type=bool, default=False)
     parser.add_argument("--cont", "-c", action="store_true")
     parser.add_argument("--load_run_name", "-lr", type=str, default="sort_task")
     parser.add_argument("--load_run_id", "-ld", type=int, default=0)
@@ -526,5 +528,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
     args = parser.parse_args()
-    print(f"{args.comm_mode}")
+    print(f"{args.human_feedback}")
     main(args)
