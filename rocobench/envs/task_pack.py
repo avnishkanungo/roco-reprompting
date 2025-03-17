@@ -3,15 +3,16 @@ import copy
 import time
 import cv2 
 import random
+import sys
 import numpy as np  
 from pydantic import dataclasses, validator 
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 import dm_control 
 from dm_control.utils.transformations import mat_to_quat
 from pyquaternion import Quaternion
-from rocobench.envs.base_env import MujocoSimEnv, EnvState
-from rocobench.envs.robot import SimRobot
-from rocobench.envs.constants import UR5E_ROBOTIQ_CONSTANTS, PANDA_CONSTANTS
+from rocobench.envs.base_env import MujocoSimEnv, EnvState ## add rocobench.envs
+from rocobench.envs.robot import SimRobot ## add rocobench.envs
+from rocobench.envs.constants import UR5E_ROBOTIQ_CONSTANTS, PANDA_CONSTANTS ## add rocobench.envs
 
 PACK_TASK_OBJECTS=[
     "bin",

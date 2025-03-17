@@ -57,7 +57,9 @@ class LLMRunner:
         use_feedback: bool = False,
         temperature: float = 0.0,
         llm_source: str = "gpt4",
-        rough_human_feedback_plan: list = []
+        rough_human_feedback_plan: list = [],
+        first_obs_based_human_input: list = [],
+        correction_comments:list = [],
         ):
         self.env = env
         self.env.reset()
@@ -84,6 +86,8 @@ class LLMRunner:
         self.debug_mode = debug_mode # useful for debug
 
         self.rough_human_feedback_plan = rough_human_feedback_plan
+        self.first_obs_based_human_input = first_obs_based_human_input
+        self.correction_comments = correction_comments
 
 
         self.llm_num_replans = llm_num_replans
@@ -208,6 +212,18 @@ class LLMRunner:
                     self.rough_human_feedback_plan.append(rough_plan) # Look for where to empty this before the next round
                     print("Feedback appended. Exiting.")
                     break  # Exit the loop after successfully receiving feedback
+            
+            # while True:
+            #     initial_human_feedback = input("Enter any comments on the first step that should be taken that the human verifier wants to pass to the LLM (press Enter to append, or 'q' to quit without comments): ")
+            #     constraints = "##Follow the instructions mentioned in this comment for this step exactly and do not deviate from it. Disreguard [Rough Overarching Plan from Human Verifier] if this comment is present. Focus on this step only and do not plan for future steps##"
+            #     if initial_human_feedback == "q":
+            #         self.first_obs_based_human_input.append("Follow next round instruction from overarching plan.")
+            #         print("Default Feedback appended. Exiting.")
+            #         break
+            #     elif initial_human_feedback:
+            #         self.first_obs_based_human_input.append(initial_human_feedback+constraints)
+            #         print("Human Feedback appended. Exiting.")
+            #         break  # Exit the loop after successfully receiving feedback
 
         for step in range(start_step, start_step + self.max_runner_steps): 
             #for each runn there will be 10(tsteps) steps running
@@ -245,7 +261,9 @@ class LLMRunner:
                     obs,
                     save_path=prompt_path,
                     step=step,
-                    rough_plan=self.rough_human_feedback_plan
+                    rough_plan=self.rough_human_feedback_plan,
+                    correction_comment=self.correction_comments,
+                    # first_step=self.first_obs_based_human_input
                     # prev_response=(prev_response['response'] if step == start_step and prev_response is not None else None)
                     ) ## prompting one round inside each step
                 if not ready_to_execute or current_llm_plan is None:
@@ -255,7 +273,12 @@ class LLMRunner:
                 if not self.skip_display:
                     for i, plan in enumerate(current_llm_plan):
                         self.display_plan(plan, save_name=f"vis_llm_plan_{i}", save_dir=step_dir)
-
+                
+                bad_plan = int(input("Is this plan bad? (1 for bad, 0 for good): "))  ### Remove if causes issue
+                if bad_plan:
+                    comment = input("Enter any comments on the plan that should be corrected by the LLM (press Enter to append, or 'q' to quit without comments): ")
+                    self.correction_comments.append(comment)
+                    continue
 
                 for i, plan in enumerate(current_llm_plan):
                     save_fname = os.path.join(step_dir, f"llm_plan_{i}.pkl")
@@ -431,7 +454,7 @@ def main(args):
             logging.warning("MoveRope needs only 5 tsteps\n")
 
     elif args.task == 'pack':
-        args.output_mode = 'action_and_path'
+        args.output_mode = 'action_and_path'#'action_only'  # action_and_path
         args.control_freq = 10
         args.split_parsed_plans = True
         args.max_failed_waypoints = 0
@@ -503,9 +526,9 @@ if __name__ == "__main__":
     parser.add_argument("--data_dir", "-d", type=str, default="data")
     parser.add_argument("--temperature", "-temp", type=float, default=0)
     parser.add_argument("--start_id", "-sid", type=int, default=-1)
-    parser.add_argument("--num_runs", '-nruns', type=int, default=20)
+    parser.add_argument("--num_runs", '-nruns', type=int, default=16)
     parser.add_argument("--run_name", "-rn", type=str, default="test")
-    parser.add_argument("--tsteps", "-t", type=int, default=10)
+    parser.add_argument("--tsteps", "-t", type=int, default=20)
     parser.add_argument("--task", type=str, default="sort_one")
     parser.add_argument("--output_mode", type=str, default="action_only", choices=["action_only", "action_and_path"])
     parser.add_argument("--comm_mode", type=str, default="dialog", choices=["chat", "plan", "dialog"])

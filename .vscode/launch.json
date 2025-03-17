@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/run_dialog.py",
-            "args": ["--task", "sweep", "--llm", "meta/llama-3.1-405b-instruct", "--human_feedback", "True" ] , //"--human_feedback", "True"
+            "args": ["--task", "sweep", "--llm", "meta/llama-3.3-70b-instruct", "--human_feedback", "True"], //"--skip_display"
             "console": "integratedTerminal",
             // "justMyCode": false,  // Allows debugging into external libraries
             "env": {

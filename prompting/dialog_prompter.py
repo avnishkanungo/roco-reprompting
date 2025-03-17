@@ -33,10 +33,12 @@ Each <coord> is a tuple (x,y,z) for gripper location, follow these steps to plan
         e.g. given path [(0.1, 0.2, 0.3), (0.2, 0.2. 0.3), (0.3, 0.4. 0.7)], the distance between steps (0.1, 0.2, 0.3)-(0.2, 0.2. 0.3) is too low, and between (0.2, 0.2. 0.3)-(0.3, 0.4. 0.7) is too high. You can change the path to [(0.1, 0.2, 0.3), (0.15, 0.3. 0.5), (0.3, 0.4. 0.7)] 
     If a plan failed to execute, re-plan to choose more feasible steps in each PATH, or choose different actions.
 [How to Incoporate [Rough Overarching Plan from Human Verifier] ,[Human Verifier Observations and Feedback] and [Human Input on Failure] to further improve and optimize planning process]
-    These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand
-    Alice and Bob need to take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent needs to do.
-    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
+    These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context about the task at hand
+    Alice, Bob, Chad and Dave need to take into account the [Rough Overarching Plan from Human Verifier] as a way of thinking and not actual steps that need to be executed, while [Human Verifier Observations and Feedback] need to be considered as instructions that need to be followed when discussing the what move each of the robotic agent needs to do.
+    Alice, Bob, Chad and Dave need to take into account [Human Input on Failure] when there is a failure in implemneting or parsing the plan.
+    Alice, Bob, Chad and Dave need to give higher priority to the latest [Human Verifier Observations and Feedback] over the previusly given [Human Verifier Observations and Feedback] and [Rough Overarching Plan from Human Verifier].
     All three inputs are important context and need to be taken into consideration whenever they are non-empty in the prompt.
+    When [Rough Overarching Plan from Human Verifier] or [Human Verifier Observations and Feedback] are non-empty, follow the instructions exactly and do not deviate from the instruction provided, for the particular step.
     When [Human Verifier Observations and Feedback] mentions that an observation about the curent setup made by any agent is incorrect, the feedback provided by the human verifier takes precedence and the LLM needs to provide a plan based on that.
     If [Human Verifier Observations and Feedback] contains a command with "EXECUTE", ignore the response and pass last item in the array as the response.
 """
@@ -44,13 +46,20 @@ Each <coord> is a tuple (x,y,z) for gripper location, follow these steps to plan
 HUMAN_VERIFIER_INSTRUCTIONS = """
 [How to Incoporate [Rough Overarching Plan from Human Verifier] ,[Human Verifier Observations and Feedback] and [Human Input on Failure] to further improve and optimize planning process]
     These inputs are included to integrate Human in the Loop approach to optimize the planning process by providing more context aout the task at hand.
-    When there is a conflict or difference between the plans suggested by the two agents for a round, use the round instructions for that round from the [Rough Overarching Plan from Human Verifier] to proceed further.
-    Alice and Bob need to take into account the [Rough Overarching Plan from Human Verifier] and [Human Verifier Observations and Feedback] when discussing the what move each of the robotic agent needs to do.
-    Alice and Bob need to take into account [Human Input on Failure] when there is a failure in implementing or parsing the plan.
+    When there is a conflict or difference between the plans suggested by the two agents for a round, use the [Human Verifier Observations and Feedback] for that round to proceed further.
+    Alice, Bob, Chad and Dave need to follow the last instruction passed in [Human Verifier Observations and Feedback] without deviation.
+    Alice, Bob, Chad and Dave need to take into account the [Rough Overarching Plan from Human Verifier] and consider it as instructions to be followed only for the first step.
+    Alice, Bob, Chad and Dave need to give higher priority to the latest [Human Verifier Observations and Feedback] over the previously given [Human Verifier Observations and Feedback] and [Rough Overarching Plan from Human Verifier].
+    Alice, Bob, Chad and Dave need to take into account [Human Input on Failure] when there is a failure in implementing or parsing the plan.
     All three inputs are important context and need to be taken into consideration whenever they are non-empty in the prompt.
     The latest value in the [Human Verifier Observations and Feedback] is the most relevant to the current round.
     When [Human Verifier Observations and Feedback] mentions that an observation about the curent setup made by any agent is incorrect, the feedback provided by the human verifier takes precedence and the LLM needs to provide a plan based on that.
     If [Human Verifier Observations and Feedback] contains a command with "EXECUTE", ignore the response and pass last item in the array as the response.
+    Once the robots have decided to follow the [Human Verifier Observations and Feedback] for a round, thhey should stop discussion and output EXECUTE.
+    Alice, Bob, Chad and Dave need to refrain from planning any actions for future steps, they need to focus on the current step only.
+    Ensure that when a robot outputs EXECUTE, the following text which are the finalized steps to be taken by each of the robots, only has test and no symbols.
+    [Correction on previous plan output by the LLM] is very important and its latest value needs to be take into account when planning for the next step. The previous values are also important and need to be considered(but at a lesser priority than the latest value) when planning for the next step.
+    If the latest value in [Correction on previous plan output by the LLM] is empty, make sure that the previous values are referenced when making decisions.
 """
 
 class DialogPrompter:
@@ -71,7 +80,8 @@ class DialogPrompter:
         use_history: bool = True,  
         use_feedback: bool = True,
         temperature: float = 0,
-        llm_source: str = "gpt-4"
+        llm_source: str = "gpt-4",
+        correction: list = []
         
     ):
         self.max_tokens = max_tokens
@@ -93,7 +103,8 @@ class DialogPrompter:
         self.max_calls_per_round = max_calls_per_round 
         self.temperature = temperature
         self.llm_source = llm_source
-        assert llm_source in ["gpt-4", "gpt-3.5-turbo", "claude","meta/llama-3.1-405b-instruct"], f"llm_source must be one of [gpt4, gpt-3.5-turbo, claude, meta/llama-3.1-405b-instruct], got {llm_source}"
+        self.correction = correction
+        assert llm_source in ["gpt-4", "gpt-3.5-turbo", "claude","meta/llama-3.1-405b-instruct","meta/llama-3.1-8b-instruct","deepseek-ai/deepseek-r1-distill-qwen-32b","meta/llama-3.3-70b-instruct"], f"llm_source must be one of [gpt4, gpt-3.5-turbo, claude, meta/llama-3.1-405b-instruct], got {llm_source}"
 
     def compose_system_prompt(
         self, 
@@ -123,8 +134,8 @@ class DialogPrompter:
         chat_history = "[Previous Chat]\n" + "\n".join(chat_history) if len(chat_history) > 0 else ""
         system_prompt = f"{action_desp}\n{round_history}\n{execute_feedback}\n{agent_prompt}\n{chat_history}" 
         
-        if len(rough_plan)>0:    
-            system_prompt = f"{action_desp}\n{round_history}\n[Rough Overarching Plan from Human Verifier]\n{rough_plan}\n{execute_feedback}\n{agent_prompt}\n{chat_history}\n[Human Verifier Observations and Feedback]\n{self.obs_based_human_input}" 
+        # if len(rough_plan)>0:    
+        system_prompt = f"{action_desp}\n{round_history}\n[Correction on previous plan output by the LLM]\n{self.correction}\n[Rough Overarching Plan from Human Verifier]\n{rough_plan}\n{execute_feedback}\n{agent_prompt}\n{chat_history}\n[Human Verifier Observations and Feedback]\n{self.obs_based_human_input}" 
         
         if self.use_feedback and len(feedback_history) > 0:
             system_prompt += "\n".join(feedback_history)
@@ -144,30 +155,33 @@ class DialogPrompter:
         ret += f"== Current Round ==\n"
         return ret
     
-    def prompt_one_round(self, obs: EnvState, save_path: str = "", step: int=0, rough_plan:list=[]): 
+    def prompt_one_round(self, obs: EnvState, save_path: str = "", step: int=0, rough_plan:list=[], correction_comment:list=[]):
         
-        if len(rough_plan)>0:
-            if step > 0:
-                env_disp = deepcopy(self.env)
-                env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
-                env_disp.physics.forward()
-                env_disp.render_point_cloud = True
-                obs = env_disp.get_obs()
-                visualize_voxel_scene(
-                    obs.scene,
-                    save_img=os.path.join(save_path, f"step_{step}_initial_state.jpg")
-                    )
-                
-                while True:
-                    initial_human_feedback = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
-                    if initial_human_feedback == "q":
-                        self.obs_based_human_input.append("Follow next round instruction from overarching plan.")
-                        print("Default Feedback appended. Exiting.")
-                        break
-                    elif initial_human_feedback:
-                        self.obs_based_human_input.append(initial_human_feedback)
-                        print("Human Feedback appended. Exiting.")
-                        break  # Exit the loop after successfully receiving feedback
+        self.correction = correction_comment
+        
+        # if len(rough_plan)>0:
+        if step > 0:
+            env_disp = deepcopy(self.env)
+            env_disp.physics.data.qpos[:] = self.env.physics.data.qpos[:].copy()
+            env_disp.physics.forward()
+            env_disp.render_point_cloud = True
+            obs = env_disp.get_obs()
+            visualize_voxel_scene(
+                obs.scene,
+                save_img=os.path.join(save_path, f"step_{step}_initial_state.jpg")
+                )
+            
+            while True:
+                initial_human_feedback = input("Enter any comments that the human verifier wants to pass to the LLM on the current plan (press Enter to append, or 'q' to quit without comments): ")
+                constraints = "##Follow the instructions mentioned in this comment for this step exactly and do not deviate from it. Disreguard [Rough Overarching Plan from Human Verifier] if this comment is present. Focus on this step only and do not plan for future steps##"
+                if initial_human_feedback == "q":
+                    self.obs_based_human_input.append("Follow next round instruction from overarching plan.")
+                    print("Default Feedback appended. Exiting.")
+                    break
+                elif initial_human_feedback:
+                    self.obs_based_human_input.append(initial_human_feedback+constraints)
+                    print("Human Feedback appended. Exiting.")
+                    break  # Exit the loop after successfully receiving feedback
         
         plan_feedbacks = []
         chat_history = [] 
@@ -251,13 +265,13 @@ This previous response from [{final_agent}] failed to parse!: '{final_response}'
                     chat_history=chat_history,
                     current_chat=agent_responses,
                     feedback_history=feedback_history,
-                    rough_plan=rough_plan   
+                    rough_plan=rough_plan  
                     ) 
                 
                 agent_prompt = f"You are {agent_name}, your response is:"
                 if n_calls == self.max_calls_per_round - 1:
                     agent_prompt = f"""
-You are {agent_name}, this is the last call, you must end your response by incoporating all previous discussions and output the best plan via EXECUTE. 
+You are {agent_name}, this is the last call, you must focus on this step and not plan for future steps and you must end your response by incoporating all previous discussions and output the best plan for the current step via EXECUTE. 
 Your response is:
                     """
                 response, usage = self.query_once( ### gets the prompts and calls the function which calls the LLM API

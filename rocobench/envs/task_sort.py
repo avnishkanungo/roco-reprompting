@@ -33,7 +33,7 @@ SORTING_BIN_NAMES=[
 ]
 
 SORT_TASK_CONTEXT=""" 
-7 panels on the table, ordered left to right: panel1,...,panel7. They form a straight assembly line, panel1 is closed to panel2 and farthest from panel7.
+7 panels on the table, ordered left to right: panel1,...,panel7. They form a straight assembly line, panel1 is closest to panel2 and farthest from panel7.
 There are 3 cubes, each robot must place their cube on the correct target, their (cube, target_panel) pairs: 
 Alice: (blue_square, panel2), 
 Bob: (pink_polygon, panel4), 

@@ -55,7 +55,7 @@ Example#3: 'EXECUTE\nNAME Alice ACTION DUMP\nNAME Bob ACTION MOVE green_cube\n'
 """
 
 SWEEP_CHAT_PROMPT="""They discuss to find the best strategy. When each robot talk, it first reflects on the task status and its own capability. 
-Carefully consider environment feedback and others' responses. Coordinate with other robots to always sweep the same cube.
+Carefully consider environment feedback, others' responses and the [Human Verifier Observations and Feedback]. Coordinate with other robots to always sweep the same cube.
 They talk in order [Alice],[Bob],[Alice],..., then, after reaching agreement, plan exactly one action per robot, output an EXECUTE to summarize the plan, and stop talking.
 Their entire chat history and the final plan are: """
 

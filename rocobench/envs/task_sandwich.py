@@ -260,6 +260,7 @@ class MakeSandwichTask(MujocoSimEnv):
         recipe_order[1:-1] = food_items
         self.recipe_order = recipe_order
         self.recipe_name = f"{recipe}_sandwich"
+        print(f"The recipe that needs to be prepared is {self.recipe_name} and its order is {self.recipe_order}")
     
     def get_allowed_collision_pairs(self) -> List[Tuple[int, int]]:
         table_id = self.physics.model.body("table").id 
